@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, like, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, laboratories, submissions, type User, type Laboratory, type Submission } from "../drizzle/schema";
+import { users, laboratories, submissions, refreshTokens, type User, type Laboratory, type Submission, type RefreshToken } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -50,6 +50,19 @@ export async function getAllStudents(): Promise<User[]> {
   return await db.select().from(users).where(eq(users.role, "student"));
 }
 
+export async function getAllUsers(): Promise<User[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(users);
+}
+
+export async function updateUserRole(userId: number, role: "student" | "teacher" | "admin"): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+  return getUserById(userId);
+}
+
 // Laboratory queries
 export async function getAllLaboratories(): Promise<Laboratory[]> {
   const db = await getDb();
@@ -93,14 +106,44 @@ export async function getSubmissionByStudentAndLab(studentId: number, labId: num
   return result.length > 0 ? result[0] : undefined;
 }
 
+export interface SubmissionFilter {
+  labId: number;
+  status?: "not_submitted" | "submitted" | "graded";
+  minGrade?: number;
+  maxGrade?: number;
+  page?: number;
+  pageSize?: number;
+}
+
 export async function getAllSubmissionsForLab(labId: number): Promise<Submission[]> {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot get submissions: database not available");
     return [];
   }
-
   return await db.select().from(submissions).where(eq(submissions.labId, labId));
+}
+
+export async function getFilteredSubmissions(filter: SubmissionFilter): Promise<{ items: Submission[]; total: number }> {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+
+  const conditions = [eq(submissions.labId, filter.labId)];
+  if (filter.status) conditions.push(eq(submissions.status, filter.status));
+  if (filter.minGrade !== undefined) conditions.push(gte(submissions.grade, String(filter.minGrade)));
+  if (filter.maxGrade !== undefined) conditions.push(lte(submissions.grade, String(filter.maxGrade)));
+
+  const where = and(...conditions);
+  const page = filter.page ?? 1;
+  const pageSize = filter.pageSize ?? 20;
+  const offset = (page - 1) * pageSize;
+
+  const [items, countRows] = await Promise.all([
+    db.select().from(submissions).where(where).limit(pageSize).offset(offset),
+    db.select({ count: sql<number>`count(*)` }).from(submissions).where(where),
+  ]);
+
+  return { items, total: Number(countRows[0]?.count ?? 0) };
 }
 
 
@@ -159,6 +202,32 @@ export async function createOrUpdateSubmission(
     console.error("[Database] Failed to update submission:", error);
     throw error;
   }
+}
+
+// Refresh token functions
+export async function saveRefreshToken(userId: number, token: string, expiresAt: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(refreshTokens).values({ userId, token, expiresAt, revoked: false });
+}
+
+export async function getRefreshToken(token: string): Promise<RefreshToken | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(refreshTokens).where(eq(refreshTokens.token, token)).limit(1);
+  return result[0];
+}
+
+export async function revokeRefreshToken(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(refreshTokens).set({ revoked: true }).where(eq(refreshTokens.token, token));
+}
+
+export async function revokeAllUserRefreshTokens(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(refreshTokens).set({ revoked: true }).where(eq(refreshTokens.userId, userId));
 }
 
 export async function updateSubmissionGrade(

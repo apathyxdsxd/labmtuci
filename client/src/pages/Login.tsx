@@ -40,13 +40,22 @@ export default function Login() {
         password,
       });
 
-      login(result.token, result.user);
-      toast.success("Login successful!");
+      login(
+        {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          accessTokenExpiresAt: result.accessTokenExpiresAt,
+        },
+        result.user,
+      );
+      toast.success("Вход выполнен!");
 
       if (result.user.role === "student") {
         setLocation("/student/dashboard");
-      } else {
+      } else if (result.user.role === "teacher") {
         setLocation("/teacher/journal");
+      } else {
+        setLocation("/admin");
       }
     } catch (error: any) {
       toast.error(error.message || "Login failed");

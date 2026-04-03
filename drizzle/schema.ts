@@ -1,7 +1,7 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
 
 /**
- * Users table - stores student and teacher accounts
+ * Users table - stores student, teacher and admin accounts
  * Custom password-based authentication (no OAuth)
  */
 export const users = mysqlTable("users", {
@@ -10,7 +10,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   name: text("name"),
-  role: mysqlEnum("role", ["student", "teacher"]).notNull(),
+  role: mysqlEnum("role", ["student", "teacher", "admin"]).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -57,3 +57,18 @@ export const submissions = mysqlTable("submissions", {
 
 export type Submission = typeof submissions.$inferSelect;
 export type InsertSubmission = typeof submissions.$inferInsert;
+
+/**
+ * Refresh tokens table - stores active refresh tokens for session management
+ */
+export const refreshTokens = mysqlTable("refresh_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 512 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  revoked: boolean("revoked").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type InsertRefreshToken = typeof refreshTokens.$inferInsert;

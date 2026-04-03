@@ -44,8 +44,75 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
-    })
+    }),
   );
+
+  // --- SEO: robots.txt ---
+  app.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send(
+      [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /api/",
+        "Disallow: /student/dashboard",
+        "Disallow: /teacher/journal",
+        "Disallow: /admin",
+        "",
+        `Sitemap: ${process.env.APP_URL ?? "https://labmtuci.example.com"}/sitemap.xml`,
+      ].join("\n"),
+    );
+  });
+
+  // --- SEO: sitemap.xml (только публичные страницы) ---
+  app.get("/sitemap.xml", (_req, res) => {
+    const base = process.env.APP_URL ?? "https://labmtuci.example.com";
+    const now = new Date().toISOString().split("T")[0];
+    res.type("application/xml").send(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${base}/</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`,
+    );
+  });
+
+  // --- Сторонний API: погода Open-Meteo (без ключа) ---
+  // Возвращает текущую температуру в Москве, что актуально для
+  // студентов, планирующих поход в университет.
+  app.get("/api/weather", async (_req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(
+        "https://api.open-meteo.com/v1/forecast?latitude=55.75&longitude=37.62&current=temperature_2m,weathercode&timezone=Europe%2FMoscow",
+        { signal: controller.signal },
+      );
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        res.status(502).json({ error: "Weather API unavailable" });
+        return;
+      }
+
+      const data = (await response.json()) as {
+        current: { temperature_2m: number; weathercode: number };
+      };
+
+      res.json({
+        temperature: data.current.temperature_2m,
+        weatherCode: data.current.weathercode,
+        city: "Москва",
+      });
+    } catch (err: any) {
+      // Graceful degradation — сервис недоступен
+      res.status(503).json({ error: "Weather service temporarily unavailable" });
+    }
+  });
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

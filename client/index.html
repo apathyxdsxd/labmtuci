@@ -1,12 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>LabMtuci - Система сдачи лабораторных работ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+
+    <!-- Основные SEO-теги -->
+    <title>LabMtuci — Система сдачи лабораторных работ</title>
+    <meta name="description" content="LabMtuci — платформа для сдачи и проверки лабораторных работ студентов МТУСИ. Загружайте работы, получайте оценки и отзывы преподавателей." />
+    <meta name="keywords" content="лабораторные работы, МТУСИ, студент, преподаватель, сдача работ, оценки" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="LabMtuci Team" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://labmtuci.example.com/" />
+
+    <!-- Open Graph (предпросмотр в соцсетях) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://labmtuci.example.com/" />
+    <meta property="og:title" content="LabMtuci — Система сдачи лабораторных работ" />
+    <meta property="og:description" content="Платформа для сдачи и проверки лабораторных работ студентов МТУСИ." />
+    <meta property="og:locale" content="ru_RU" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="LabMtuci — Система сдачи лабораторных работ" />
+    <meta name="twitter:description" content="Платформа для сдачи и проверки лабораторных работ студентов МТУСИ." />
+
+    <!-- JSON-LD структурированные данные (WebApplication) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "LabMtuci",
+      "description": "Система сдачи и проверки лабораторных работ студентов МТУСИ",
+      "url": "https://labmtuci.example.com/",
+      "applicationCategory": "EducationApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "RUB"
+      }
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -15,12 +53,6 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Закомментированный блок аналитики
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
-    -->
   </body>
 
 </html>
